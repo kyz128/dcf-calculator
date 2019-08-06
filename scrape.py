@@ -13,10 +13,10 @@ interest_url="https://finance.yahoo.com/quote/AAPL/financials?p=AAPL"
 
 options = Options()
 options.add_argument("--headless")
-browser= webdriver.Chrome(options=options)
+browser= webdriver.Chrome('/Users/kimberlyzhang/Documents/chromedriver', options=options)
 
 def currency_to_num(currency):
-	return Decimal(sub(r'[^\d.]', '', currency))
+	return sub(r'[^\d.]', '', currency)
 
 def billion_to_e(num):
 	return Decimal(sub(r'B', 'e9', num))
@@ -26,8 +26,8 @@ def collect_fcf_data(url, browser):
 	soup= BeautifulSoup(browser.page_source, 'lxml')
 	op_cash_row= soup.select('#row9jqxgrid > div:nth-child(n+3) > div')
 	capex_row= soup.select('#row10jqxgrid > div:nth-child(n+3) > div')
-	op_cash= [currency_to_num(i.get_text() + 'e6') for i in op_cash_row]
-	capex= [currency_to_num(i.get_text()+'e6') for i in capex_row]
+	op_cash= [Decimal(currency_to_num(i.get_text()) + 'e6') for i in op_cash_row]
+	capex= [Decimal(currency_to_num(i.get_text())+'e6') for i in capex_row]
 	return np.array(op_cash), np.array(capex)
 
 def collect_terminal_val_data(url, browser):
@@ -35,14 +35,14 @@ def collect_terminal_val_data(url, browser):
 	soup= BeautifulSoup(browser.page_source, 'lxml')
 	revenue_row= soup.select('#row0jqxgrid > div:nth-child(n+3) > div')
 	ebitda_row= soup.select('#row16jqxgrid > div:nth-child(n+3) > div')
-	revenue= [currency_to_num(i.get_text() + 'e6') for i in revenue_row]
-	ebitda= [currency_to_num(i.get_text() + 'e6') for i in ebitda_row]
+	revenue= [Decimal(currency_to_num(i.get_text()) + 'e6') for i in revenue_row]
+	ebitda= [Decimal(currency_to_num(i.get_text()) + 'e6') for i in ebitda_row]
 	return np.array(revenue), np.array(ebitda)
 
 def get_financial_stats(url, browser):
 	browser.get(url)
 	soup= BeautifulSoup(browser.page_source, 'lxml')
-	targets= ["Market Cap (intraday)", "PEG Ratio (5 yr expected)", "Enterprise Value/EBITDA", "Total Debt (mrq)", "Beta (3Y Monthly)", "50-Day Moving Average", "200-Day Moving Average"]
+	targets= ["Market Cap (intraday)", "PEG Ratio (5 yr expected)", "Enterprise Value/EBITDA", "Total Debt", "Beta (3Y Monthly)", "50-Day Moving Average", "200-Day Moving Average"]
 	res= {}
 	stored= soup.find_all('td')
 	for i, val in enumerate(stored):
@@ -61,10 +61,9 @@ def get_interest_expense(url, browser):
 	for i, val in enumerate(stored):
 		text= val.get_text()
 		if text == 'Interest Expense':
-			res[text]= currency_to_num(stored[i+1].get_text() + 'e3')
+			res[text]= Decimal(currency_to_num(stored[i+1].get_text()) + 'e3')
 			break
 	return res
-
 
 
 
