@@ -1,5 +1,6 @@
 import numpy as np
 from scrape import *
+from decimal import Decimal
 
 op_cash, capex= collect_fcf_data(cash_url, browser)
 fcf= op_cash-capex
@@ -18,14 +19,22 @@ def get_growth_rates(ebitda_margin):
 def get_wacc(e, d, tax_rate, beta, krf, rp, interest):
 	equity_portion= e/(d+e)
 	debt_portion= d/(d+e)
-	equity_cost= beta*rp + krf 
-	debt_cost= (interest/d)*100*(1-tax_rate)
+	equity_cost= beta*rp + krf
+	debt_cost= (interest/d)*(1-tax_rate)
 	return equity_cost*equity_portion + debt_cost*debt_portion
 
 def caculate_terminal_val(g, last_fcf, wacc):
 	return last_fcf*(1+g)/(wacc-g)
 
-g= np.mean(get_growth_rates(ebitda_margin))
-print(g)
 
+g= np.mean(get_growth_rates(ebitda_margin))
+beta= stats['Beta (3Y Monthly)']
+tax_rate= Decimal(.21)
+e= stats['Market Cap (intraday)']
+d= stats['Total Debt']
+rp= Decimal(0.06)
+krf= Decimal(0.02)
+interest= interest['Interest Expense']
+wacc= get_wacc(e, d, tax_rate, beta, krf, rp, interest)
+print(wacc)
 
