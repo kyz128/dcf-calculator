@@ -1,6 +1,7 @@
 import numpy as np
 from scrape import *
 from decimal import Decimal
+from holt_winters import *
 
 op_cash, capex= collect_fcf_data(cash_url, browser)
 fcf= op_cash-capex
