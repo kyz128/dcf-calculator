@@ -43,10 +43,10 @@ def double_exp_smoothing(series, alpha, beta):
 	return np.array(init_trend) + np.array(init_level)
 ###################################################################
 #L= season length, s= season component; the part that repeats itself at the same offset into season; len(s) = L
-#Formula: l_x= alpha*(y_x - s_x-L) + (1-alpha)*(l_x_prev + b_x_prev)
+#Formula: l_x= alpha*(y_x - s_x%L) + (1-alpha)*(l_x_prev + b_x_prev)
 #		  b_x= beta*(l_x - l_x_prev) + (1-beta)*(b_x_prev)
-#		  s_x= gamma*(y_x - l_x) + (1-gamma)*(s_x-L)
-# 		  y_hat= l_x + m*b_x + s_x-L+1+(m-1)modL 
+#		  s_x%L= gamma*(y_x - l_x) + (1-gamma)*(s_x%L)
+# 		  y_hat= l_x + m*b_x + s_(x+m)modL 
 ###################################################################
 season_series = [30,21,29,31,40,48,53,47,37,39,31,29,17,9,20,24,27,
 				 35,41,38,27,31,27,26,21,13,21,18,33,35,40,36,22,24,
@@ -79,7 +79,21 @@ def init_season_comp(series, L):
 	return res
 
 def holt_winters(series, alpha, beta, gamma, L, m):
-	level= [series[0]]
-	trend= [get_avg_of_trend_avg(series, L)]
-	seasonal= init_season_comp(series, L)
-	preds= []
+	pred= []
+	for i in range(len(series) + m):
+		if i==0:
+			level= [series[0]]
+			trend= [get_avg_of_trend_avg(series, L)]
+			seasonals= init_season_comp(series, L)
+			pred.append(series[0])
+			continue
+		elif i < len(series):
+			y= series[i]
+			level.append(alpha*(y-seasonals[i%L]) + (1-alpha)*(level[-1]+ trend[-1]))
+			trend.append(beta*(level[i]- level[i-1]) + (1-beta)*trend[-1])
+			seasonals[i%L]= (gamma*(y-level[-1]) + (1-gamma)*seasonals[i%L])	
+			pred.append(level[-1]+ trend[-1] + seasonals[i%L])
+		else:
+			m= i-len(series) + 1
+			pred.append(level[-1] + m*trend[-1] + seasonals[i%L])	
+	return pred	
