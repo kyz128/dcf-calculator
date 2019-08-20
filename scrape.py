@@ -13,7 +13,7 @@ interest_url="https://finance.yahoo.com/quote/AAPL/financials?p=AAPL"
 
 options = Options()
 options.add_argument("--headless")
-browser= webdriver.Chrome('/Users/kimberlyzhang/Documents/chromedriver', options=options)
+browser= webdriver.Chrome(options=options)
 
 def currency_to_num(currency):
 	return sub(r'[^\d.]', '', currency)
@@ -42,7 +42,7 @@ def collect_terminal_val_data(url, browser):
 def get_financial_stats(url, browser):
 	browser.get(url)
 	soup= BeautifulSoup(browser.page_source, 'lxml')
-	targets= ["Market Cap (intraday)", "PEG Ratio (5 yr expected)", "Enterprise Value/EBITDA", "Total Debt", "Beta (3Y Monthly)", "50-Day Moving Average", "200-Day Moving Average"]
+	targets= ["Market Cap (intraday)", "PEG Ratio (5 yr expected)", "Enterprise Value/EBITDA", "Total Debt", "Beta (3Y Monthly)", "50-Day Moving Average", "200-Day Moving Average", 'Shares Outstanding']
 	res= {}
 	stored= soup.find_all('td')
 	for i, val in enumerate(stored):

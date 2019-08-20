@@ -2,6 +2,7 @@ import numpy as np
 from scrape import *
 from decimal import Decimal
 from time_pred import *
+from scipy.optimize import minimize
 
 op_cash, capex= collect_fcf_data(cash_url, browser)
 fcf= op_cash-capex
@@ -28,8 +29,14 @@ def caculate_terminal_val(g, last_fcf, wacc):
 	return last_fcf*(1+g)/(wacc-g)
 
 
+def mse(params, series):
+	alpha, beta= params[0], params[1]
+	preds= double_exp_smoothing(series, alpha, beta)
+	return np.mean((preds-series)**2)
+
 g= np.mean(get_growth_rates(ebitda_margin))
 beta= stats['Beta (3Y Monthly)']
+shares= stats['Shares Outstanding']
 tax_rate= Decimal(.21)
 e= stats['Market Cap (intraday)']
 d= stats['Total Debt']
@@ -37,5 +44,13 @@ rp= Decimal(0.06)
 krf= Decimal(0.02)
 interest= interest['Interest Expense']
 wacc= get_wacc(e, d, tax_rate, beta, krf, rp, interest)
-print(wacc)
-
+# Find optimal alpha and beta for time series prediction
+guess= [1.0, 1.0]
+res= minimize(mse, guess, args= (np.log(fcf.astype(float)),), bounds= ((0,1), (0,1)), method='SLSQP')
+a, b= res.x
+# Get forecasted fcf 
+preds= double_exp_smoothing(fcf.astype(float), a, b)
+terminal_value= caculate_terminal_val(float(g), preds[-1], float(wacc))
+intrinsic_val= np.sum(preds) + terminal_value
+estimated_share= float(intrinsic_val)/float(shares)
+print(estimated_share)
